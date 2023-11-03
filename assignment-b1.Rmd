@@ -1,41 +1,135 @@
 ---
 title: "Tidy Submission"
-author: "Andrew"
+author: "Andrew Feng"
 date: "2023-11-03"
 output: md_document
+Roxygen: list(markdown = TRUE)
+
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(datateachr)
+library(tidyverse)
+library(palmerpenguins)
+library(dplyr)
+library(testthat)
+```
+
+
+## Excercise 1 & 2: Make a Function & Document Function 
+```{r}
+options(repos = "https://cloud.r-project.org/")
+
+```
+
+
+```{r}
+install.packages("roxygen2")
+library(roxygen2)
 ```
 
 
 
-## Excercise 1: Make a Function 
-
 ```{r}
-#' Summarize Data by Group
+#' @title Summarize Column Data
 #'
-#' This function groups a dataset by a specified variable and performs summarization on selected variables within each group.
+#' This function generates a summary of a specific column within a dataset, providing relevant basic statistics such as minimum, 1st quartile, median, mean, 3rd quartile, and maximum values. The inspiration behind this function is from my MDA2 project where I had to use individual formulas to find basic statistics regarding the age column of my tree datset. 
 #'
-#' @param data The dataset to be summarized.
-#' @param group_var The variable used for grouping the data. 'group_var' is a concise and descriptive term that represents the grouping variable.
-#' @param summarise_func The summarization function to be applied (e.g., 'mean', 'sum', etc.). The name 'summarise_func' is used to convey the purpose of this argument.
-#' @param ... Ellipsis to specify variables to be summarized. The ellipsis allows flexibility in selecting multiple variables for summarization.
+#' @param data Represents the dataset from which the column data is extracted. 'data' is a standard term widely used to reference a dataset.
+#' @param column_name The name of the column for which a summary is generated. The parameter 'column_name' succinctly represents the specific column to be summarized.
 #' 
-#' @return Returns a summarized dataset with calculations based on the specified summarization function and variables selected via the ellipsis. 
-#' 
-summary_function <- function(data, group_var, summarise_func, ...) {
-  data %>%
-    group_by({{group_var}}) %>%
-    summarise(across(all_of({{...}}), .fns = list(~summarise_func(., na.rm = TRUE))))
+#' @return Returns a summary of the specified column in the dataset, including statistical measures like minimum, 1st quartile, median, mean, 3rd quartile, and maximum values.
+
+
+summarize_column <- function(data, column_name) {
+  if (!(column_name %in% names(data))) {
+    stop("Column not found in the dataset")
+  }
+  
+  column_data <- data[[column_name]]
+  
+  # Apply the convert_to_na functionality to replace non-numeric elements with NA
+  convert_to_na <- function(x) {
+    is_numeric <- suppressWarnings(as.numeric(x))
+    x[is.na(is_numeric)] <- NA
+    return(x)
+  }
+  
+  # Apply the conversion function to the specified column
+  column_data <- convert_to_na(column_data)
+  
+  # Convert to numeric and summarize the column, excluding NA values
+  column_data <- as.numeric(column_data)
+  summary_data <- summary(column_data[!is.na(column_data)])
+  
+  return(summary_data)
 }
 
 
+
 ```
 
-## Excercise 2: Document your Function
+
+```{r}
+dataset1 <- matrix(c(
+  89, "test", 24, "56", 73, 10, 44, 62, 17, 90, 30, 5, 81, 13, 68, 49, 3, 70, 58, 27, 96, 
+  41, 79, 2, 45, 36, 50, 86, 12, 94, 67, 25, 52, 76, 21, 85, 60, 8, 35, 91, 7, 
+  29, 80, 18, 98, 64, 15, 63, 33, 69, 48, 16, 71, 40, 95, 22, 51, "anyString", 19, 
+  84, 11, 47, 74, 6, 42, 55, 87, 32, 93, 38, 65, 1, 83, 20, 77, 37, 66, 31, 82, 
+  9, 54, 88, 23, 57, 72, 4, 92, 39, 61), ncol = 5)
+
+fake_dataset <- as.data.frame(dataset1)
+
+colnames(fake_dataset) <- c("Column_1", "Column_2", "Column_3", "Column_4", "Column_5")
+
+print(fake_dataset)
 
 
+```
+
+
+```{r}
+summarize_column(fake_dataset, "Column_2")
+
+```
+```{r}
+
+#test
+test <- data.frame (Numeric_Column = c(10, 20, "na", 40, 50) )
+
+summarize_column(test, "Numeric_Column")
+print(summary(c(10, 20, 40, 50)))
+
+```
+
+
+```{r}
+# Example dataset
+test_data <- data.frame(
+  Numeric_Column = c(10, 20, NA, 40, 50),  # Includes non-numeric NA
+  Another_Column = c(5, 15, 25, 35, 45),     # Numeric column with no NA
+  na_Column = c(2, 1, "na", 55, 15)     # Numeric column with non numeric
+
+)
+
+# Test scenarios
+test_that("Testing summarize_column function", {
+  # Test case 1: Vector with no NA's
+  expect_equal(summarize_column(test_data, "Another_Column"), summary(c(5, 15, 25, 35, 45)))
+  
+  # Test case 2: Vector that has NA's
+  expect_equal(summarize_column(test_data, "Numeric_Column"), summary(c(10, 20, 40, 50)))
+  
+  # Test case 3: Vector that has non numeric string
+  expect_equal(summarize_column(test_data, "na_Column"), summary(c(2, 1, 55, 15)))
+  
+  # Test case 4: Vector of length 0, like numeric(0)
+  expect_error(summarize_column(test_data, "Nonexistent_Column"), "Column not found in the dataset")
+})
+
+
+
+```
 
 
